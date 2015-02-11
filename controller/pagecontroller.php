@@ -10,26 +10,42 @@
 
 namespace OCA\Contacts\Controller;
 
-use OCA\Contacts\App,
-	OCP\AppFramework\Controller,
-	OCA\Contacts\Utils\Properties,
-	OCA\Contacts\ImportManager,
-	OCP\AppFramework\Http\TemplateResponse;
-
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IRequest;
+use OCA\Contacts\Utils\Properties;
+use OCA\Contacts\ImportManager;
+use OCA\Contacts\Factory\UtilFactory;
 
 /**
  * Controller class for groups/categories
  */
 class PageController extends Controller {
+	/** @var ImportManager */
+	private $importManager;
+	/** @var UtilFactory */
+	private $utilFactory;
+
+	/**
+	 * @param string $AppName
+	 * @param IRequest $request
+	 * @param ImportManager $importManager
+	 * @param UtilFactory $utilFactory
+	 */
+	public function __construct($AppName,
+								IRequest $request,
+								ImportManager $importManager,
+								UtilFactory $utilFactory){
+		parent::__construct($AppName, $request);
+		$this->importManager = $importManager;
+		$this->utilFactory = $utilFactory;
+	}
 
 	/**
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
 	public function index() {
-		\OC::$server->getNavigationManager()->setActiveEntry($this->appName);
-
-		$importManager = new ImportManager();
 		$imppTypes = Properties::getTypesForProperty('IMPP');
 		$adrTypes = Properties::getTypesForProperty('ADR');
 		$phoneTypes = Properties::getTypesForProperty('TEL');
@@ -40,19 +56,19 @@ class PageController extends Controller {
 			$imProtocols[$name] = $values['displayname'];
 		}
 
-		$maxUploadFilesize = \OCP\Util::maxUploadFilesize('/');
+		$maxUploadFilesize = $this->utilFactory->maxUploadFilesize('/');
 
 		$response = new TemplateResponse($this->appName, 'contacts');
-		$response->setParams(array(
+		$response->setParams([
 			'uploadMaxFilesize' => $maxUploadFilesize,
-			'uploadMaxHumanFilesize' => \OCP\Util::humanFileSize($maxUploadFilesize),
+			'uploadMaxHumanFilesize' => $this->utilFactory->humanFileSize($maxUploadFilesize),
 			'phoneTypes' => $phoneTypes,
 			'emailTypes' => $emailTypes,
 			'adrTypes' => $adrTypes,
 			'imppTypes' => $imppTypes,
 			'imProtocols' => $imProtocols,
-			'importManager' => $importManager,
-		));
+			'importManager' => $this->importManager,
+		]);
 
 		return $response;
 	}
